@@ -31,10 +31,10 @@ Todo
 
 * fix vc4 initialisation
 
-* delete more packages / reduce size further (currently still above 400MB)
+* delete more packages / reduce size further (currently still above 300MB)
 
 * make it easy to boot into a shell or own executables
   instead of providing a login prompt.
 
-* document how to setup network as user
+* Use busybox instead of bash
 

@@ -40,6 +40,7 @@ suseInsertService boot.device-mapper
 #suseInsertService chronyd
 suseRemoveService avahi-dnsconfd
 suseRemoveService avahi-daemon
+suseInsertService geckito-setup
 
 if [ -x /usr/bin/cloud-init ]; then
     # Found cloud-init (probably for dracut firstboot), enable it
@@ -128,222 +129,16 @@ rm /etc/localtime
 rm /var/lib/zypp/AnonymousUniqueId
 rm /var/lib/systemd/random-seed
 
-#======================================
-# Add Factory repo
-#--------------------------------------
-# Add repos from /etc/YaST2/control.xml
-if [ -x /usr/sbin/add-yast-repos ]; then
-    add-yast-repos
-    zypper --non-interactive rm -u live-add-yast-repos
-fi
-
-#======================================
-# Invoke grub2-install
-#--------------------------------------
-
-case $kiwi_iname in
-  *efi|*.aarch64-rootfs)
-    [ -x /usr/sbin/grub2-install ] && {
-        /usr/sbin/grub2-install || :
-    }
-    ;;
-esac
-
-#======================================
-# Add Contrib repo when needed
-#--------------------------------------
-if [ -f /kiwi-hooks/contrib_repo ]; then
-    REPO=$(cat /kiwi-hooks/contrib_repo | sed 's/devel:ARM:Factory:Contrib://')
-    URLREPO=$(sed 's/:/:\//g' /kiwi-hooks/contrib_repo)
-    zypper ar -f "http://download.opensuse.org/repositories/$URLREPO/standard/" "Factory-Contrib-$REPO"
-    rm -f /kiwi-hooks/contrib_repo
-
-    if [ -z "$(ls -A /kiwi-hooks)" ]; then
-        rm -rf /kiwi-hooks
-    fi
-fi
-
-case "$kiwi_iname" in
-  *efi*|*chromebook*|*-raspberrypi2|*-raspberrypi)
-    # Do not use any defaults. X server will detect what it needs to load
-    # Tested with GFX images in qemu and on chromebook
-    ;;
-  *)
-    #======================================
-    # Add xorg config with fbdev for other boards
-    #--------------------------------------
-    mkdir -p /etc/X11/xorg.conf.d/
-    cat > /etc/X11/xorg.conf.d/20-fbdev.conf <<-EOF
-	Section "Device"
-	    Identifier "fb gfx"
-	    Driver "fbdev"
-	    Option "fb" "/dev/fb0"
-	EndSection
-	EOF
-    ;;
-esac
-
-#======================================
-# Configure system for E20 usage
-#--------------------------------------
-# XXX only do for E20 image types
-if [[ "$kiwi_iname" == *"E20-"* ]]; then
-	baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER lightdm
-	cat >> /etc/sysconfig/windowmanager <<EOF
-## Path:        Desktop/Window manager
-## Description:
-## Type:        string(gnome,kde4,kde,lxde,xfce,twm,icewm)
-## Default:     xfce
-## Config:      profiles,kde,susewm
-#
-# Here you can set the default window manager (kde, fvwm, ...)
-# changes here require at least a re-login
-DEFAULT_WM="enlightenment"
-EOF
-	# We want to start in gfx mode
-	baseSetRunlevel 5
-	suseConfig
-fi
-
-#======================================
-# Configure system for LXQT usage
-#--------------------------------------
-# XXX only do for LXQT image types
-if [[ "$kiwi_iname" == *"LXQT-"* ]]; then
-	baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER lightdm
-	cat >> /etc/sysconfig/windowmanager <<EOF
-## Path:        Desktop/Window manager
-## Description:
-## Type:        string(gnome,kde4,kde,lxde,xfce,twm,icewm)
-## Default:     xfce
-## Config:      profiles,kde,susewm
-#
-# Here you can set the default window manager (kde, fvwm, ...)
-# changes here require at least a re-login
-DEFAULT_WM="lxqt"
-EOF
-	# We want to start in gfx mode
-	baseSetRunlevel 5
-	suseConfig
-fi
-
-#======================================
-# Configure system for XFCE usage
-#--------------------------------------
-# XXX only do for XFCE image types
-if [[ "$kiwi_iname" == *"XFCE-"* ]]; then
-	baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER lightdm
-	cat >> /etc/sysconfig/windowmanager <<EOF
-## Path:        Desktop/Window manager
-## Description:
-## Type:        string(gnome,kde4,kde,lxde,xfce,twm,icewm)
-## Default:     xfce
-## Config:      profiles,kde,susewm
-#
-# Here you can set the default window manager (kde, fvwm, ...)
-# changes here require at least a re-login
-DEFAULT_WM="xfce"
-EOF
-	# We want to start in gfx mode
-	baseSetRunlevel 5
-	suseConfig
-fi
-
-#======================================
-# Configure system for IceWM usage
-#--------------------------------------
-if [[ "$kiwi_iname" == *"X11-"* ]]; then
-       baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER xdm
-       baseUpdateSysConfig /etc/sysconfig/windowmanager DEFAULT_WM icewm
-
-       # We want to start in gfx mode
-       baseSetRunlevel 5
-       suseConfig
-fi
-
-#======================================
-# Configure system for KDE/Plasma usage
-#--------------------------------------
-if [[ "$kiwi_iname" == *"KDE-"* ]]; then
-       baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER sddm
-       baseUpdateSysConfig /etc/sysconfig/windowmanager DEFAULT_WM plasma5
-
-       # We want to start in gfx mode
-       baseSetRunlevel 5
-       suseConfig
-fi
-
-#======================================
-# Configure system for GNOME usage
-#--------------------------------------
-if [[ "$kiwi_iname" == *"GNOME-"* ]]; then
-       baseUpdateSysConfig /etc/sysconfig/displaymanager DISPLAYMANAGER gdm
-       baseUpdateSysConfig /etc/sysconfig/windowmanager DEFAULT_WM gnome
-
-       # We want to start in gfx mode
-       baseSetRunlevel 5
-       suseConfig
-fi
-
-#======================================
-# Add tty devices to securetty
-#--------------------------------------
-# XXX should be target specific
-cat >> /etc/securetty <<EOF
-ttyO0
-ttyO2
-ttyAMA0
-ttyAMA2
-ttymxc0
-ttymxc1
-EOF
 
 #======================================
 # Bring up eth device automatically
 #--------------------------------------
-mkdir -p /etc/sysconfig/network/
-case "$kiwi_iname" in
-    *-m400)
-	cat > /etc/sysconfig/network/ifcfg-enp1s0 <<-EOF
-	BOOTPROTO='dhcp'
-	MTU=''
-	REMOTE_IPADDR=''
-	STARTMODE='onboot'
-	EOF
-	;;
-    *efi*)
-        # Jetson Nano uses enp1s0 in qemu
-	cat > /etc/sysconfig/network/ifcfg-enp1s0 <<-EOF
-	BOOTPROTO='dhcp'
-	MTU=''
-	REMOTE_IPADDR=''
-	STARTMODE='onboot'
-	EOF
-        # Tumbleweed uses enp0s3 in qemu (eth0 in Leap)
-	cat > /etc/sysconfig/network/ifcfg-enp0s3 <<-EOF
-	BOOTPROTO='dhcp'
-	MTU=''
-	REMOTE_IPADDR=''
-	STARTMODE='onboot'
-	EOF
-	# But some boards still have eth0 instead of enpXsY
-	cat > /etc/sysconfig/network/ifcfg-eth0 <<-EOF
-	BOOTPROTO='dhcp'
-	MTU=''
-	REMOTE_IPADDR=''
-	STARTMODE='onboot'
-	EOF
-	;;
-    *)
-	# XXX extend to more boards
-	cat > /etc/sysconfig/network/ifcfg-eth0 <<-EOF
-	BOOTPROTO='dhcp'
-	MTU=''
-	REMOTE_IPADDR=''
-	STARTMODE='onboot'
-	EOF
-	;;
-esac
+cat > /etc/sysconfig/network/ifcfg-eth0 <<-EOF
+BOOTPROTO='dhcp'
+MTU=''
+REMOTE_IPADDR=''
+STARTMODE='onboot'
+EOF
 
 #======================================
 # Configure chronyd
@@ -368,18 +163,6 @@ EOF
 #     touch /var/lib/YaST2/reconfig_system
 #     suseInsertService jeos-firstboot
 # fi
-
-#======================================
-# Snapper quota requires a config file
-#--------------------------------------
-if [ -x /usr/bin/snapper ]; then
-    echo "creating initial snapper config ..."
-    # we can't call snapper here as the .snapshots subvolume
-    # already exists and snapper create-config doens't like
-    # that.
-    cp /etc/snapper/config-templates/default /etc/snapper/configs/root
-    baseUpdateSysConfig /etc/sysconfig/snapper SNAPPER_CONFIGS root
-fi
 
 #======================================
 # Disable systemd-firstboot
@@ -446,16 +229,6 @@ EOF
 fi
 
 #======================================
-# Load useful modules not auto-loaded for i.MX6 boards (SabreLite)
-#---
-if [[ "$kiwi_iname" == *"-sabrelite" ]]; then
-    cat > /etc/modules-load.d/imx6.conf <<EOF
-# Load imx6q-cpufreq to make use of cpufreq
-imx6q-cpufreq
-EOF
-fi
-
-#======================================
 # Import trusted keys
 #--------------------------------------
 for i in /usr/lib/rpm/gnupg/keys/gpg-pubkey*asc; do
@@ -466,178 +239,10 @@ done
 
 #======================================
 # Initrd fixes (for 2nd boot only. 1st boot modules are handled by *.kiwi files)
-#--------------------------------------
-if [[ "$kiwi_iname" == *"-arndale" ]] || [[ "$kiwi_iname" == *"-chromebook" ]]; then
-    echo 'add_drivers+=" i2c-exynos5 tps65090-regulator sdhci-pltfm sdhci-s3c mmc_core mmc_block dwc3-exynos dw_dmac dw_mmc dw_wdt dw_mmc-exynos dw_mmc-pltfm dw_dmac dw_dmac_core usb-storage uas usbcore usb-common ehci-hcd ehci-exynos phy-exynos-usb2 phy-generic phy-exynos-dp-video phy-exynos-mipi-video exynosdrm analogix_dp mwifiex_sdio pwrseq_simple btmrvl_sdio "' >  /etc/dracut.conf.d/exynos_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-chromebook" ]]; then
-    echo 'add_drivers+=" cros_ec_devs nxp_ptn3460 pwm-samsung  i2c_mux i2c_arb_gpio_challenge "' >> /etc/dracut.conf.d/exynos_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-beagle" || "$kiwi_iname" == *"-panda" ]]; then
-    # OMAP DMA is needed for MMC
-    echo 'add_drivers+=" omap_dma "' > /etc/dracut.conf.d/omap_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-beaglebone" ]]; then
-    echo 'add_drivers+=" tda998x "' > /etc/dracut.conf.d/beagleboneblack_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-pine64" ]] || [[ "$kiwi_iname" == *"-cubietruck" ]] || [[ "$kiwi_iname" == *"-cubieboard"* ]] || [[ "$kiwi_iname" == *"olinuxino"* ]]; then
-    echo 'add_drivers+=" fixed sunxi-mmc axp20x-regulator axp20x-rsb "' > /etc/dracut.conf.d/sunxi_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-sabrelite" ]]; then
-    echo 'add_drivers+=" ahci_imx imxdrm imx_ipuv3_crtc imx_ldb "' > /etc/dracut.conf.d/sabrelite_modules.conf
-fi
-
-# In 4.8 sdhci_bcm2835 was dropped in favor of sdhci-iproc.
-# Leave sdhci_bcm2835 in place for 4.7 and :Contrib:RaspberryPi{,2}.
-
-if [[ "$kiwi_iname" == *"-raspberrypi1" ]]; then
-    echo 'add_drivers+=" sdhci_bcm2835 sdhci-iproc bcm2835_dma dwc2 "' > /etc/dracut.conf.d/raspberrypi_modules.conf
-    echo '# The vc4 driver does not support rpi1 (yet)' > /etc/modprobe.d/90-blacklist-vc4.conf
-    echo '# so blacklist it to use simplefb instead. (boo#996614)' >> /etc/modprobe.d/90-blacklist-vc4.conf
-    echo 'blacklist vc4' >> /etc/modprobe.d/90-blacklist-vc4.conf
-fi
-
-if [[ "$kiwi_iname" == *"-raspberrypi2" ]]; then
-    echo 'add_drivers+=" sdhci_bcm2835 sdhci-iproc bcm2835_dma mmc_block dwc2 "' > /etc/dracut.conf.d/raspberrypi_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-raspberrypi" ]]; then
-    echo 'add_drivers+=" sdhci-iproc bcm2835-sdhost bcm2835_dma mmc_block dwc2 drm vc4"' > /etc/dracut.conf.d/raspberrypi_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-socfpgade0nanosoc" ]]; then
-    echo 'add_drivers+=" dw_mmc-pltfm mmc_core mmc_block dw_mmc dw_wdt "' > /etc/dracut.conf.d/socfpga_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-odroidc2" || "$kiwi_iname" == *"-nanopik2" ]]; then
-    echo 'add_drivers+=" fixed gpio-regulator "' > /etc/dracut.conf.d/meson_gxbb_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-efi"* ]]; then
-    echo 'add_drivers+=" gpio-regulator virtio_gpu scsi_mod "' > /etc/dracut.conf.d/efi_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-rock64" ]]; then
-    echo 'add_drivers+=" dw_mmc-rockchip fixed rk808 rk808-regulator i2c-rk3x "' > /etc/dracut.conf.d/rock64_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-pinebookpro" || "$kiwi_iname" == *"-rockpro64" || "$kiwi_iname" == *"-rockpi4" ]]; then
-    echo 'add_drivers+=" sdhci-of-dwcmshc fixed "' > /etc/dracut.conf.d/rk3399_modules.conf
-fi
-
-if [[ "$kiwi_iname" == *"-hikey960" ]]; then
-    echo 'add_drivers+=" reset-hi3660 k3dma dw_mmc-k3 fixed hi6421-pmic-core hi6421v530-regulator ufs_hisi "' > /etc/dracut.conf.d/hikey960_modules.conf
-fi
-
-if [[ $kiwi_iname == *-hifiveunleashed ]]; then
-    cat > /etc/dracut.conf.d/hifiveunleashed_modules.conf <<EOF
-add_drivers+=" spi-sifive "
-force_drivers+=" mmc-spi "
-EOF
-fi
-
-
-#==========================================
-# Kiwi-ng: hook-scripts/* does not work anymore, so we must use dracut hooks instead.
-# See: http://suse.github.io/kiwi/overview/workflow.html#boot-image-hook-scripts
-#------------------------------------------
-if [[ "$kiwi_iname" == *"-chromebook" ]]; then
-	mkdir -p /usr/lib/dracut/modules.d/90chromebook
-	
-	cat >> /etc/dracut.conf.d/90chromebook.conf <<-"EOF"
-add_dracutmodules+=" chromebook "
-EOF
-
-	cat >> /usr/lib/dracut/modules.d/90chromebook/fix_partition.sh <<-"EOF"
-#!/bin/bash
-
-type deactivate_all_device_maps >/dev/null 2>&1 || . /lib/kiwi-lib.sh
-type lookup_disk_device_from_root >/dev/null 2>&1 || . /lib/kiwi-lib.sh
-diskname=$(lookup_disk_device_from_root)
-
-deactivate_all_device_maps
-
-# Enable bootflag on partition 3 (u-boot now looks for bootscripts/dtb on bootable partitions only)
-parted $diskname set 3 boot on
-
-# CGPT magic
-cgpt add -t kernel -i 2 -S 1 -T 5 -P 10 -l U-BOOT $diskname
-
-systemctl daemon-reload
-EOF
-	cat >> /usr/lib/dracut/modules.d/90chromebook/module-setup.sh <<-"EOF" 
-#!/bin/bash
-
-check() {
-	require_binaries cgpt parted
-	return 0
-}
-
-depends() {
-	echo rootfs-block dm kiwi-lib
-	return 0
-}
-
-installkernel() {
-	# load required kernel modules when needed
-	return 0
-}
-
-install() {
-	declare moddir=${moddir}
-	inst_multiple cgpt parted
-	inst_hook pre-mount 30 "${moddir}/fix_partition.sh"
-}
-EOF
-
-fi
-
 #======================================
-# Configuration for Pinephone
-#--------------------------------------
-if [[ "$kiwi_iname" == *"-pinephone"* ]]; then
-    
-    # As some apps are currently not adapted to work in small displays we delete the icons from Desktop Manager
-    mkdir -p /etc/skel/.local/share/applications
-    cp -t /etc/skel/.local/share/applications/ /usr/share/applications/YaST2/*.desktop /usr/share/applications/org.opensuse.yast.Packager.desktop
-    echo "NoDisplay=true" | tee -a /etc/skel/.local/share/applications/*.desktop
-    
-    # User pine needed with numerical password for unlocking PHOSH
-    useradd -m pine
-    echo -e "1234\n1234" | (passwd pine)
 
-    groupadd plugdev
-    groupadd netdev
-    usermod -a -G plugdev,audio,video,dialout,render,input,netdev pine
-    
-    # Set Hostname
-    echo "openSUSE" > /etc/hostname
-    # We only use NetworkManager for networking
-    # One does not want to have ssh running in every public wifi, specially on a smartphone
-    systemctl disable wicked sshd.service || true
-    systemctl enable NetworkManager firewalld || true
-    systemctl disable NetworkManager-wait-online.service
-    
-    #Enabling basic services
-    systemctl enable eg25-manager.service pinephone-modem-boot.service pinephone-boot.service pinephone-gps.service pinephone-agps.service pinephone-agps.timer
-    if [[ "$kiwi_iname" == *"PHOSH-pinephone"* ]]; then
-        systemctl enable phosh.service
-    elif [[ "$kiwi_iname" == *"PLAMO-pinephone"* ]]; then
-        systemctl enable ofono.service greetd.service hfd-service.service
-    fi
-else
-    # if NetworkManager is installed, then we want to use it... unfortunately, wicked gets pulled in always:
-    # added wicked-service@openSUSE:Factory:ARM/standard because of sysconfig:/sbin/ifup :-(
-    if rpm -q NetworkManager; then
-        systemctl disable network || true
-        systemctl enable NetworkManager || true
-    fi
-fi
+echo 'add_drivers+=" sdhci-iproc bcm2835-sdhost bcm2835_dma mmc_block dwc2 drm vc4"' > /etc/dracut.conf.d/raspberrypi_modules.conf
+echo 'add_drivers+=" gpio-regulator virtio_gpu scsi_mod "' > /etc/dracut.conf.d/efi_modules.conf
 
 #======================================
 # Umount kernel filesystems

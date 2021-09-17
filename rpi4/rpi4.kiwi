@@ -10,8 +10,9 @@
   </description>
   <!-- OBS-ExclusiveArch: aarch64 -->
   <preferences>
-      <type image="oem" initrd_system="dracut" filesystem="ext4" fsmountoptions="noatime,nobarrier" editbootinstall="kernel-raspberrypi-install" kernelcmdline="loglevel=3" spare_part="200" spare_part_mountpoint="/boot/rpi/" bootloader="custom"  >
-      <!-- gives 1GB raw image, it is used for 30-40% only though -->
+     <type image="oem" initrd_system="dracut" filesystem="ext4" fsmountoptions="noatime,nobarrier" editbootinstall="kernel-raspberrypi-install" kernelcmdline="loglevel=3" spare_part="200" spare_part_mountpoint="/boot/rpi/"  bootloader="custom">
+      <!-- gives 1GB raw image, it is used for 30-40% only though.
+           the filesystem will get increased matching the storage card on first boot. -->
       <size unit="M">1024</size>
       <oemconfig>
         <oem-resize>false</oem-resize>
@@ -50,10 +51,11 @@
     <!-- JeOS: Additonal base packages -->
     <package name="dtc"/>
     <package name="busybox"/>
-    <!-- Avoid the big 10MiB one -->
     <package name="filesystem"/>
-    <!-- Do not use gettext-runtime-mini-->
     <package name="gptfdisk" bootinclude="true"/>
+
+    <!-- for user setup via /boot partition -->
+    <package name="geckito-setup"/>
 
     <package name="kmod"/>
     <package name="net-tools"/>
@@ -82,6 +84,7 @@
     <package name="libsystemd0"/>
     <!-- avoid using libsystemd0-mini -->
     <!--Do not install both wicked and Network Manager - boo#1141433-->
+    <package name="iproute2"/>
     <package name="wicked"/>
     <package name="wicked-service"/>
   </packages>
