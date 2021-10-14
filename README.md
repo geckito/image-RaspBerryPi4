@@ -29,8 +29,6 @@ Install pbuild via package or via git:
 Todo
 ====
 
-* fix vc4 initialisation
-
 * delete more packages / reduce size further (currently still above 300MB)
 
 * make it easy to boot into a shell or own executables
