@@ -37,7 +37,7 @@ suseSetupProduct
 #--------------------------------------
 #suseInsertService sshd
 suseInsertService boot.device-mapper
-#suseInsertService chronyd
+suseInsertService chronyd
 suseRemoveService avahi-dnsconfd
 suseRemoveService avahi-daemon
 suseInsertService geckito-setup
@@ -76,13 +76,6 @@ baseUpdateSysConfig /etc/sysconfig/network/dhcp WRITE_HOSTNAME_TO_HOSTS no
 # dirs needed by kiwi for subvolumes
 #------------------------------------------
 mkdir -p /var/lib/mailman /var/lib/mariadb /var/lib/mysql /var/lib/named /var/lib/pgsql /var/lib/libvirt/images
-
-#==========================================
-# remove package docs
-#------------------------------------------
-rm -rf /usr/share/doc/packages/*
-rm -rf /usr/share/doc/manual/*
-rm -rf /opt/kde*
 
 if test -e /etc/vimrc && ! rpmqpack | grep -q vim-enhanced; then
     #======================================

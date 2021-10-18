@@ -15,7 +15,7 @@
            the filesystem will get increased matching the storage card on first boot. -->
       <size unit="M">1024</size>
       <oemconfig>
-        <oem-resize>false</oem-resize>
+        <oem-resize>true</oem-resize>
         <oem-skip-verify>true</oem-skip-verify>
       </oemconfig>
     </type>
@@ -64,6 +64,7 @@
     <!-- Available only for Leap: <package name="openSUSE-release-appliance-custom"/> -->
     <!-- Tumbleweed uses openSUSE-release-ftp -->
     <package name="openSUSE-release-ftp"/>
+    <package name="chrony"/>
     <package name="pam"/>
     <package name="shadow"/>
     <package name="sysconfig"/>
@@ -103,14 +104,16 @@
     <package name="libzypp"/>
     <package name="btrfsprogs-udev-rules"/>
     <package name="lvm2"/>
-    <package name="parted"/>
     <package name="dialog"/>
     <package name="libdialog14"/>
     <package name="libyui-ncurses-pkg15"/>
     <package name="gpg2"/>
     <package name="mdadm"/>
+<!-- can get removed when resizing of root fs is not required
+    <package name="parted"/>
     <package name="dracut-kiwi-lib"/>
     <package name="dracut-kiwi-oem-repart"/>
+-->
   </packages>
   <packages type="image">
     <package name="dracut-kiwi-oem-repart"/>
