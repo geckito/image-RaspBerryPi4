@@ -9,6 +9,10 @@ Required: kpartx
 Required: dosfstools
 Required: python3-kiwi_crossprepare_plugin
 
+# 15.3 dropped these packages temporary
+Ignore: rpmlint-mini rpmlint-Factory
+Support: !rpmlint-mini !rpmlint-Factory
+
 # only needed as workaround for chroot builds:
 #Required: kmod
 #Required: kernel-default
