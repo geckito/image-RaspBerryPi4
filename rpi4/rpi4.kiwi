@@ -33,6 +33,9 @@
     <user password="$1$wYJUgpM5$RXMMeASDc035eX.NbYWFl0" home="/root" name="root"/>
   </users>
   <repository type="rpm-md">
+    <source path="http://download.opensuse.org/update/leap/15.3/oss/"/>
+  </repository>
+  <repository type="rpm-md">
     <source path="http://download.opensuse.org/distribution/leap/15.3/repo/oss/"/>
   </repository>
   <packages type="bootstrap">
