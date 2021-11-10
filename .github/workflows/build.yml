@@ -30,4 +30,4 @@ jobs:
         run: |
           builddir=`mktemp -d`
           git clone https://github.com/openSUSE/obs-build.git $builddir
-          $builddir/pbuild --showlog --vm-type=docker:privileged || $builddir/pbuild --result
+          $builddir/pbuild --showlog --vm-type=docker:privileged
